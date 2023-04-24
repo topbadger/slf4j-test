@@ -1,16 +1,6 @@
 package com.github.valfirst.slf4jtest;
 
-import static com.github.valfirst.slf4jtest.LoggingEvent.warn;
-import static com.github.valfirst.slf4jtest.TestLoggerAssert.MdcComparator.CONTAINING;
-import static com.github.valfirst.slf4jtest.TestLoggerAssert.MdcComparator.IGNORING;
-import static com.github.valfirst.slf4jtest.TestLoggerAssert.PredicateBuilder.aLog;
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import com.google.common.collect.ImmutableList;
-import java.util.*;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,6 +9,20 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.OngoingStubbing;
 import uk.org.lidalia.slf4jext.Level;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import static com.github.valfirst.slf4jtest.LoggingEvent.warn;
+import static com.github.valfirst.slf4jtest.TestLoggerAssert.MdcComparator.CONTAINING;
+import static com.github.valfirst.slf4jtest.TestLoggerAssert.MdcComparator.IGNORING;
+import static com.github.valfirst.slf4jtest.TestLoggerAssert.PredicateBuilder.aLog;
+import static org.assertj.core.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TestLoggerAssertionsTest {
@@ -616,6 +620,73 @@ class TestLoggerAssertionsTest {
             assertions.anyThread().hasLevel(Level.ERROR).hasNumberOfLogs(0);
 
             verify(logger).getAllLoggingEvents();
+        }
+    }
+
+    @Nested
+    class PredicateBuilderTestCase {
+
+        private final TestLoggerAssert.PredicateBuilder predicateBuilder = aLog();
+
+        @Test
+        void withExpectedLevelPasses() {
+            LoggingEvent event = LoggingEvent.warn("foo");
+            assertThat(predicateBuilder.withLevel(Level.WARN).build()).accepts(event);
+        }
+
+        @Test
+        void withIncorrectLevelFails() {
+            LoggingEvent event = LoggingEvent.warn("foo");
+            assertThat(predicateBuilder.withLevel(Level.ERROR).build()).rejects(event);
+        }
+
+        @Test
+        void withExpectedMessagePasses() {
+            LoggingEvent event = LoggingEvent.warn("foo");
+            assertThat(predicateBuilder.withMessage("foo").build()).accepts(event);
+        }
+
+        @Test
+        void withIncorrectMessageFails() {
+            LoggingEvent event = LoggingEvent.warn("foo");
+            assertThat(predicateBuilder.withMessage("bar").build()).rejects(event);
+        }
+
+        @Test
+        void withExpectedFormattedMessagePasses() {
+            LoggingEvent event = LoggingEvent.warn("foo {}", "blah");
+            assertThat(predicateBuilder.withFormattedMessage("foo blah").build()).accepts(event);
+        }
+
+        @Test
+        void withIncorrectFormattedMessageFails() {
+            LoggingEvent event = LoggingEvent.warn("foo {}", "blah");
+            assertThat(predicateBuilder.withFormattedMessage("foo {}").build()).rejects(event);
+        }
+
+        @Test
+        void withExpectedArgumentsPasses() {
+            LoggingEvent event = LoggingEvent.warn("foo {}", "blah");
+            assertThat(predicateBuilder.withArguments("blah").build()).accepts(event);
+        }
+
+        @Test
+        void withIncorrectArgumentsFails() {
+            LoggingEvent event = LoggingEvent.warn("foo {}", "blah");
+            assertThat(predicateBuilder.withArguments("bar").build()).rejects(event);
+        }
+
+        @Test
+        void withExpectedThrowablePasses() {
+            Throwable throwable = new RuntimeException();
+            LoggingEvent event = LoggingEvent.warn(throwable, "foo");
+            assertThat(predicateBuilder.withThrowable(throwable).build()).accepts(event);
+        }
+
+        @Test
+        void withIncorrectThrowableFails() {
+            LoggingEvent event = LoggingEvent.warn("foo {}", new RuntimeException());
+            assertThat(predicateBuilder.withThrowable(new RuntimeException()).build()).rejects(event);
         }
     }
 

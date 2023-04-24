@@ -1,11 +1,12 @@
 package com.github.valfirst.slf4jtest;
 
 import com.google.common.collect.ObjectArrays;
+import org.slf4j.Marker;
+import uk.org.lidalia.slf4jext.Level;
+
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
-import org.slf4j.Marker;
-import uk.org.lidalia.slf4jext.Level;
 
 /**
  * A set of assertions to validate that logs have been logged to a {@link TestLogger}.
@@ -225,6 +226,7 @@ public class TestLoggerAssert extends AbstractTestLoggerAssert<TestLoggerAssert>
         private static final Predicate<LoggingEvent> IGNORE_PREDICATE = event -> true;
 
         private Predicate<LoggingEvent> messagePredicate = IGNORE_PREDICATE;
+        private Predicate<LoggingEvent> formattedMessagePredicate = IGNORE_PREDICATE;
         private Predicate<LoggingEvent> argumentsPredicate = IGNORE_PREDICATE;
         private Predicate<LoggingEvent> markerPredicate = IGNORE_PREDICATE;
         private Predicate<LoggingEvent> mdcPredicate = IGNORE_PREDICATE;
@@ -251,6 +253,15 @@ public class TestLoggerAssert extends AbstractTestLoggerAssert<TestLoggerAssert>
 
         public PredicateBuilder withMessage(Predicate<String> predicate) {
             this.messagePredicate = event -> predicate.test(event.getMessage());
+            return this;
+        }
+
+        public PredicateBuilder withFormattedMessage(String formattedMessage) {
+            return withFormattedMessage(formattedMessage::equals);
+        }
+
+        public PredicateBuilder withFormattedMessage(Predicate<String> predicate) {
+            this.formattedMessagePredicate = event -> predicate.test(event.getFormattedMessage());
             return this;
         }
 
@@ -281,6 +292,7 @@ public class TestLoggerAssert extends AbstractTestLoggerAssert<TestLoggerAssert>
             return levelPredicate
                     .and(markerPredicate)
                     .and(messagePredicate)
+                    .and(formattedMessagePredicate)
                     .and(argumentsPredicate)
                     .and(throwablePredicate)
                     .and(mdcPredicate);
